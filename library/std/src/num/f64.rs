@@ -1091,13 +1091,7 @@ impl f64 {
     #[stable(feature = "rust1", since = "1.0.0")]
     #[inline]
     pub fn asinh(self) -> f64 {
-        let ax = self.abs();
-        if ax >= (1u64 << f64::MANTISSA_DIGITS / 2) as f64 {
-            return (ax.ln() + consts::LN_2).copysign(self);
-        }
-
-        let ix = 1.0 / ax;
-        (ax + (ax / (Self::hypot(1.0, ix) + ix))).ln_1p().copysign(self)
+        cmath::asinh(self)
     }
 
     /// Inverse hyperbolic cosine function.
@@ -1123,13 +1117,7 @@ impl f64 {
     #[stable(feature = "rust1", since = "1.0.0")]
     #[inline]
     pub fn acosh(self) -> f64 {
-        if self < 1.0 {
-            Self::NAN
-        } else if self >= (1u64 << f64::MANTISSA_DIGITS / 2) as f64 {
-            self.ln() + consts::LN_2
-        } else {
-            (self + ((self - 1.0).sqrt() * (self + 1.0).sqrt())).ln()
-        }
+        cmath::acosh(self)
     }
 
     /// Inverse hyperbolic tangent function.
