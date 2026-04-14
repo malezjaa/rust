@@ -1,0 +1,16 @@
+warning: trivial type alias. this alias does nothing
+  --> $DIR/lack-of-wfcheck.rs:11:1
+   |
+LL | type UnsatTraitBound1<T = Vec<str>> = T; // `str: Sized` unsatisfied
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove this type alias and use the type parameter directly at call sites
+   = note: `#[warn(trivial_type_alias)]` on by default
+help: consider using the default type as the main type
+   |
+LL - type UnsatTraitBound1<T = Vec<str>> = T; // `str: Sized` unsatisfied
+LL + type UnsatTraitBound1 = Vec<str>; // `str: Sized` unsatisfied
+   |
+
+warning: 1 warning emitted
+

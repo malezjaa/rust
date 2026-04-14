@@ -1,0 +1,19 @@
+warning: trivial type alias. this alias does nothing
+  --> $DIR/trivial-type-alias.rs:3:1
+   |
+LL | type Direct<T> = T;
+   | ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove this type alias and use the type parameter directly at call sites
+   = note: `#[warn(trivial_type_alias)]` on by default
+
+warning: trivial type alias. this alias does nothing
+  --> $DIR/trivial-type-alias.rs:5:1
+   |
+LL | type WithLifetime<'a, T> = T;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove this type alias and use the type parameter directly at call sites
+
+warning: 2 warnings emitted
+

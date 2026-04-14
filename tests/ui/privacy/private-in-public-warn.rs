@@ -3,7 +3,7 @@
 
 #![feature(associated_type_defaults)]
 #![deny(private_interfaces, private_bounds)]
-#![allow(improper_ctypes)]
+#![allow(improper_ctypes, trivial_type_alias)]
 
 mod types {
     struct Priv;

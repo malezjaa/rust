@@ -9,8 +9,9 @@ use rustc_span::edition::Edition::Edition2015;
 use rustc_span::{BytePos, Span, kw, sym};
 
 use crate::lints::{
-    PathStatementDrop, PathStatementDropSub, PathStatementNoEffect, UnusedAllocationDiag,
-    UnusedAllocationMutDiag, UnusedDelim, UnusedDelimSuggestion, UnusedImportBracesDiag,
+    PathStatementDrop, PathStatementDropSub, PathStatementNoEffect, TrivialTypeAliasDiag,
+    TrivialTypeAliasSuggestion, UnusedAllocationDiag, UnusedAllocationMutDiag, UnusedDelim,
+    UnusedDelimSuggestion, UnusedImportBracesDiag,
 };
 use crate::{EarlyContext, EarlyLintPass, LateContext, LateLintPass, Lint, LintContext};
 
@@ -1251,6 +1252,77 @@ impl<'tcx> LateLintPass<'tcx> for UnusedAllocation {
                         cx.emit_span_lint(UNUSED_ALLOCATION, e.span, UnusedAllocationMutDiag);
                     }
                 };
+            }
+        }
+    }
+}
+
+declare_lint! {
+    /// The `trivial_type_alias` lint detects type aliases that are
+    /// just a generic parameter of the alias itself.
+    ///
+    /// ### Example
+    /// ```rust
+    /// pub type AutoStream<S> = S;
+    /// ```
+    ///
+    /// {{produces}}
+    pub TRIVIAL_TYPE_ALIAS,
+    Warn,
+    "detects type aliases that are just a generic parameter of the alias itself"
+}
+
+declare_lint_pass!(TrivialTypeAlias => [TRIVIAL_TYPE_ALIAS]);
+
+impl<'tcx> LateLintPass<'tcx> for TrivialTypeAlias {
+    fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx hir::Item<'tcx>) {
+        if let hir::ItemKind::TyAlias(_, generics, main_ty) = &item.kind {
+            let params =
+                &generics.params.iter().filter(|param| !param.is_lifetime()).collect::<Vec<_>>();
+
+            // This should only trigger with one generic.
+            // e.g.: type Foo<T, U> = U; will be stopped before because T was not used.
+            let [generic] = params.as_slice() else { return };
+
+            if let Some((def_id, _)) = main_ty.as_generic_param()
+                && def_id == generic.def_id.to_def_id()
+            {
+                // We should allow generics with trait bounds
+                // regardless if `lazy_type_alias` is enabled.
+                // https://github.com/rust-lang/rust/issues/112792
+                if generics.predicates.iter().any(|p| {
+                    let hir::WherePredicateKind::BoundPredicate(pred) = p.kind else {
+                        return false;
+                    };
+                    pred.bounded_ty
+                        .as_generic_param()
+                        .is_some_and(|(id, _)| id == generic.def_id.to_def_id())
+                }) {
+                    return;
+                }
+
+                let mut suggestion = None;
+
+                // When the generic has a default type suggest replacing the main type with the generic.
+                // e.g.: type Bar<T = Vec<&'static str>> = T;
+                if let hir::GenericParamKind::Type { default, .. } = generic.kind
+                    && let Some(ty) = default
+                {
+                    let sm = cx.tcx.sess.source_map();
+                    if let Ok(replace) = sm.span_to_snippet(ty.span) {
+                        suggestion = Some(TrivialTypeAliasSuggestion {
+                            generic_span: generics.span,
+                            new_type_span: main_ty.span,
+                            replace,
+                        })
+                    };
+                }
+
+                cx.emit_span_lint(
+                    TRIVIAL_TYPE_ALIAS,
+                    item.span,
+                    TrivialTypeAliasDiag { suggestion },
+                )
             }
         }
     }

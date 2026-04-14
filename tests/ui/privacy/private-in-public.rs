@@ -4,6 +4,7 @@
 // This test also ensures that the checks are performed even inside private modules.
 
 #![feature(associated_type_defaults)]
+#![allow(trivial_type_alias)]
 
 mod types {
     struct Priv;
@@ -15,13 +16,19 @@ mod types {
     pub const C: Priv = Priv; //~ WARNING type `types::Priv` is more private than the item `C`
     pub static S: Priv = Priv; //~ WARNING type `types::Priv` is more private than the item `S`
     pub fn f1(arg: Priv) {} //~ WARNING `types::Priv` is more private than the item `types::f1`
-    pub fn f2() -> Priv { panic!() } //~ WARNING type `types::Priv` is more private than the item `types::f2`
+    pub fn f2() -> Priv {
+        panic!()
+    } //~ WARNING type `types::Priv` is more private than the item `types::f2`
     pub struct S1(pub Priv); //~ WARNING type `types::Priv` is more private than the item `types::S1::0`
-    pub struct S2 { pub field: Priv } //~ WARNING `types::Priv` is more private than the item `S2::field`
+    pub struct S2 {
+        pub field: Priv,
+    } //~ WARNING `types::Priv` is more private than the item `S2::field`
     impl Pub {
         pub const C: Priv = Priv; //~ WARNING type `types::Priv` is more private than the item `types::Pub::C`
         pub fn f1(arg: Priv) {} //~ WARNING type `types::Priv` is more private than the item `types::Pub::f1`
-        pub fn f2() -> Priv { panic!() } //~ WARNING type `types::Priv` is more private than the item `types::Pub::f2`
+        pub fn f2() -> Priv {
+            panic!()
+        } //~ WARNING type `types::Priv` is more private than the item `types::Pub::f2`
     }
 }
 
@@ -30,10 +37,13 @@ mod traits {
     pub struct Pub<T>(T);
     pub trait PubTr {}
 
-    pub enum E<T: PrivTr> { V(T) } //~ WARNING trait `traits::PrivTr` is more private than the item `traits::E`
+    pub enum E<T: PrivTr> {
+        V(T),
+    } //~ WARNING trait `traits::PrivTr` is more private than the item `traits::E`
     pub fn f<T: PrivTr>(arg: T) {} //~ WARNING trait `traits::PrivTr` is more private than the item `traits::f`
     pub struct S1<T: PrivTr>(T); //~ WARNING trait `traits::PrivTr` is more private than the item `traits::S1`
-    impl<T: PrivTr> Pub<T> { //~ WARNING trait `traits::PrivTr` is more private than the item `traits::Pub<T>`
+    impl<T: PrivTr> Pub<T> {
+        //~ WARNING trait `traits::PrivTr` is more private than the item `traits::Pub<T>`
         pub fn f<U: PrivTr>(arg: U) {} //~ WARNING trait `traits::PrivTr` is more private than the item `traits::Pub::<T>::f`
     }
 }
@@ -43,15 +53,33 @@ mod traits_where {
     pub struct Pub<T>(T);
     pub trait PubTr {}
 
-    pub enum E<T> where T: PrivTr { V(T) }
+    pub enum E<T>
+    where
+        T: PrivTr,
+    {
+        V(T),
+    }
     //~^ WARNING trait `traits_where::PrivTr` is more private than the item `traits_where::E`
-    pub fn f<T>(arg: T) where T: PrivTr {}
+    pub fn f<T>(arg: T)
+    where
+        T: PrivTr,
+    {
+    }
     //~^ WARNING trait `traits_where::PrivTr` is more private than the item `traits_where::f`
-    pub struct S1<T>(T) where T: PrivTr;
+    pub struct S1<T>(T)
+    where
+        T: PrivTr;
     //~^ WARNING trait `traits_where::PrivTr` is more private than the item `traits_where::S1`
-    impl<T> Pub<T> where T: PrivTr {
-    //~^ WARNING trait `traits_where::PrivTr` is more private than the item `traits_where::Pub<T>`
-        pub fn f<U>(arg: U) where U: PrivTr {}
+    impl<T> Pub<T>
+    where
+        T: PrivTr,
+    {
+        //~^ WARNING trait `traits_where::PrivTr` is more private than the item `traits_where::Pub<T>`
+        pub fn f<U>(arg: U)
+        where
+            U: PrivTr,
+        {
+        }
         //~^ WARNING trait `traits_where::PrivTr` is more private than the item `traits_where::Pub::<T>::f`
     }
 }
@@ -94,8 +122,7 @@ mod aliases_pub {
         }
     }
 
-    use self::m::Pub1 as PrivUseAlias;
-    use self::m::PubTr as PrivUseAliasTr;
+    use self::m::{Pub1 as PrivUseAlias, PubTr as PrivUseAliasTr};
     type PrivAlias = m::Pub2;
     trait PrivTr {
         type Assoc = m::Pub3;
@@ -123,8 +150,7 @@ mod aliases_priv {
         type Check = u8;
     }
 
-    use self::Priv1 as PrivUseAlias;
-    use self::PrivTr1 as PrivUseAliasTr;
+    use self::{Priv1 as PrivUseAlias, PrivTr1 as PrivUseAliasTr};
     type PrivAlias = Priv2;
     trait PrivTr {
         type Assoc = Priv3;

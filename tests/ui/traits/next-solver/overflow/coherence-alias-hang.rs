@@ -6,7 +6,7 @@
 #![feature(lazy_type_alias)]
 #![feature(rustc_attrs)]
 #![rustc_no_implicit_bounds]
-#![allow(incomplete_features)]
+#![allow(incomplete_features, trivial_type_alias)]
 
 type Id<T> = T;
 trait NotImplemented {}

@@ -201,6 +201,7 @@ late_lint_methods!(
             LetUnderscore: LetUnderscore,
             InvalidReferenceCasting: InvalidReferenceCasting,
             ImplicitAutorefs: ImplicitAutorefs,
+            TrivialTypeAlias: TrivialTypeAlias,
             // Depends on referenced function signatures in expressions
             UnusedResults: UnusedResults,
             UnitBindings: UnitBindings,

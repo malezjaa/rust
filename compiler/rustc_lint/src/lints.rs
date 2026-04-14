@@ -3655,3 +3655,25 @@ pub(crate) struct OnMoveMalformedFormatLiterals {
     "only literals are allowed as values for the `message`, `note` and `label` options. These options must be separated by a comma"
 )]
 pub(crate) struct OnMoveMalformedAttrExpectedLiteralOrDelimiter;
+
+#[derive(Diagnostic)]
+#[diag("trivial type alias. this alias does nothing")]
+#[help("remove this type alias and use the type parameter directly at call sites")]
+
+pub(crate) struct TrivialTypeAliasDiag {
+    #[subdiagnostic]
+    pub suggestion: Option<TrivialTypeAliasSuggestion>,
+}
+
+#[derive(Subdiagnostic)]
+#[multipart_suggestion(
+    "consider using the default type as the main type",
+    applicability = "maybe-incorrect"
+)]
+pub(crate) struct TrivialTypeAliasSuggestion {
+    #[suggestion_part(code = "")]
+    pub generic_span: Span,
+    #[suggestion_part(code = "{replace}")]
+    pub new_type_span: Span,
+    pub replace: String,
+}
