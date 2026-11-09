@@ -16,20 +16,20 @@ pub struct PrintRequest {
     pub kind: PrintKind,
     pub out: OutFileName,
     pub arg: Option<String>,
-    pub format: PrintOutputFormat
+    pub format: PrintOutputFormat,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum PrintOutputFormat {
     Default,
-    Json
+    Json,
 }
 
 impl PrintOutputFormat {
     pub fn try_parse(kind: &str) -> Option<PrintOutputFormat> {
         match kind {
             "json" => Some(PrintOutputFormat::Json),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -131,7 +131,7 @@ pub enum PrintCategory {
 }
 
 impl PrintKind {
-    fn name(self) -> &'static str {
+    pub fn name(self) -> &'static str {
         use PrintKind::*;
         match self {
             // tidy-alphabetical-start
@@ -257,7 +257,7 @@ pub fn collect_print_requests(
             kind: PrintKind::TargetCPUs,
             out: OutFileName::Stdout,
             arg: None,
-            format: PrintOutputFormat::Default
+            format: PrintOutputFormat::Default,
         });
         cg.target_cpu = None;
     };
@@ -266,7 +266,7 @@ pub fn collect_print_requests(
             kind: PrintKind::TargetFeatures,
             out: OutFileName::Stdout,
             arg: None,
-            format: PrintOutputFormat::Default
+            format: PrintOutputFormat::Default,
         });
         cg.target_feature = String::new();
     }
