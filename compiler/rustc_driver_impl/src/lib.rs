@@ -97,7 +97,7 @@ mod signal_handler {
     pub(super) fn install() {}
 }
 
-use crate::crate_info::print_crate_info;
+pub use crate::crate_info::print_crate_info;
 use crate::diagnostics::{
     CantEmitMIR, RLinkEmptyVersionNumber, RLinkEncodingVersionMismatch, RLinkRustcVersionMismatch,
     RLinkWrongFileType, RlinkCorruptFile, RlinkNotAFile, RlinkUnableToRead, UnstableFeatureUsage,

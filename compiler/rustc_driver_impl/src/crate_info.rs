@@ -26,51 +26,46 @@ enum PrintValue {
     Json(serde_json::Value),
 }
 
-fn format_print(req: &PrintRequest, value: PrintValue) -> String {
-    match req.format {
-        PrintOutputFormat::Default => match value {
-            PrintValue::Bool(b) => format!("{b}\n"),
-            PrintValue::Str(s) => format!("{s}\n"),
-            PrintValue::List(items) => items.iter().map(|i| format!("{i}\n")).collect(),
-            PrintValue::Json(v) => format!("{}\n", serde_json::to_string_pretty(&v).unwrap()),
-        },
-        PrintOutputFormat::Json => {
-            let value = match value {
-                PrintValue::Bool(b) => json!(b),
-                PrintValue::Str(s) => json!(s),
-                PrintValue::List(items) => json!(items),
-                PrintValue::Json(v) => v,
-            };
-            let mut out = serde_json::to_string(&json!({
-                "message-type": "print",
-                "id": req.kind.name(),
-                "value": value,
-            }))
-            .unwrap(); //FIXME: unwrap
-            out.push('\n');
-            out
+impl PrintValue {
+    fn format(self, req: &PrintRequest) -> String {
+        match req.format {
+            PrintOutputFormat::Default => match self {
+                PrintValue::Bool(b) => format!("{b}\n"),
+                PrintValue::Str(s) => format!("{s}\n"),
+                PrintValue::List(items) => items.iter().map(|i| format!("{i}\n")).collect(),
+                PrintValue::Json(v) => format!("{}\n", serde_json::to_string_pretty(&v).unwrap()),
+            },
+            PrintOutputFormat::Json => {
+                let value = match self {
+                    PrintValue::Bool(b) => json!(b),
+                    PrintValue::Str(s) => json!(s),
+                    PrintValue::List(items) => json!(items),
+                    PrintValue::Json(v) => v,
+                };
+                let out = serde_json::to_string(&json!({
+                    "message-type": "print",
+                    "id": req.kind.name(),
+                    "value": value,
+                }))
+                .expect("serializing PrintValue to JSON cannot fail");
+                out + "\n"
+            }
         }
     }
 }
 
 macro_rules! push_info {
     ($out:expr, $req:expr, @bool $v:expr) => {
-        $out.push_str(&format_print($req, PrintValue::Bool($v)))
+        $out.push_str(&PrintValue::Bool($v).format($req))
     };
     ($out:expr, $req:expr, @vec $v:expr) => {
-        $out.push_str(&format_print(
-            $req,
-            PrintValue::List($v.iter().map(|x| x.to_string()).collect()),
-        ))
+        $out.push_str(&PrintValue::List($v.iter().map(|x| x.to_string()).collect()).format($req))
     };
     ($out:expr, $req:expr, @json $v:expr) => {
-        $out.push_str(&format_print(
-            $req,
-            PrintValue::Json(serde_json::to_value(&$v).unwrap()),
-        ))
+        $out.push_str(&PrintValue::Json(serde_json::to_value(&$v).unwrap()).format($req))
     };
     ($out:expr, $req:expr, @string $($arg:tt)*) => {
-        $out.push_str(&format_print($req, PrintValue::Str(format!($($arg)*))))
+        $out.push_str(&PrintValue::Str(format!($($arg)*)).format($req))
     };
 }
 
@@ -84,7 +79,9 @@ pub fn print_crate_info(
     // used by the rest of the module. Within this function, we only write to
     // the output specified by `sess.io.output_file`.
     #[allow(unused_imports)]
-    use {crate::do_not_use_safe_print as safe_print, crate::do_not_use_safe_print as safe_println};
+    use {
+        crate::do_not_use_safe_print as safe_print, crate::do_not_use_safe_print as safe_println,
+    };
 
     // NativeStaticLibs and LinkArgs are special - printed during linking
     // (empty iterator returns true)
