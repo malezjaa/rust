@@ -409,7 +409,7 @@ impl<'hir> PathSegment<'hir> {
     }
 
     pub fn args(&self) -> &GenericArgs<'hir> {
-        if let Some(ref args) = self.args { args } else { GenericArgs::NONE }
+        if let Some(args) = self.args { args } else { GenericArgs::NONE }
     }
 }
 
@@ -2293,21 +2293,21 @@ impl Expr<'_> {
     /// on the given expression should be considered a place expression.
     pub fn is_place_expr(&self, mut allow_projections_from: impl FnMut(&Self) -> bool) -> bool {
         match self.kind {
-            ExprKind::Path(QPath::Resolved(_, ref path)) => {
+            ExprKind::Path(QPath::Resolved(_, path)) => {
                 matches!(path.res, Res::Local(..) | Res::Def(DefKind::Static { .. }, _) | Res::Err)
             }
 
             // Type ascription inherits its place expression kind from its
             // operand. See:
             // https://rust-lang.github.io/rfcs/0803-type-ascription.html#type-ascription-and-temporaries
-            ExprKind::Type(ref e, _) => e.is_place_expr(allow_projections_from),
+            ExprKind::Type(e, _) => e.is_place_expr(allow_projections_from),
 
             // Unsafe binder cast preserves place-ness of the sub-expression.
             ExprKind::UnsafeBinderCast(_, e, _) => e.is_place_expr(allow_projections_from),
 
             ExprKind::Unary(UnOp::Deref, _) => true,
 
-            ExprKind::Field(ref base, _) | ExprKind::Index(ref base, _, _) => {
+            ExprKind::Field(base, _) | ExprKind::Index(base, _, _) => {
                 allow_projections_from(base) || base.is_place_expr(allow_projections_from)
             }
 
@@ -4141,7 +4141,7 @@ impl<'hir> FnRetTy<'hir> {
     pub fn span(&self) -> Span {
         match *self {
             Self::DefaultReturn(span) => span,
-            Self::Return(ref ty) => ty.span,
+            Self::Return(ty) => ty.span,
         }
     }
 
@@ -5199,7 +5199,7 @@ impl<'hir> Node<'hir> {
                 ItemKind::TyAlias(_, _, ty)
                 | ItemKind::Static(_, _, ty, _)
                 | ItemKind::Const(_, _, ty, _) => Some(ty),
-                ItemKind::Impl(impl_item) => Some(&impl_item.self_ty),
+                ItemKind::Impl(impl_item) => Some(impl_item.self_ty),
                 _ => None,
             },
             Node::TraitItem(it) => match it.kind {
