@@ -1143,11 +1143,13 @@ impl<'hir> Generics<'hir> {
             return self.span.shrink_to_hi();
         }
 
-        let is_param_explicit = |par: &&GenericParam<'_>| match par.kind {
-            GenericParamKind::Type { .. }
-            | GenericParamKind::Const { .. }
-            | GenericParamKind::Lifetime { kind: LifetimeParamKind::Explicit } => true,
-            _ => false,
+        let is_param_explicit = |par: &&GenericParam<'_>| {
+            matches!(
+                par.kind,
+                GenericParamKind::Type { .. }
+                    | GenericParamKind::Const { .. }
+                    | GenericParamKind::Lifetime { kind: LifetimeParamKind::Explicit }
+            )
         };
 
         // Find the span of the type parameter.
@@ -2556,15 +2558,15 @@ impl Expr<'_> {
 
     /// To a first-order approximation, is this a pattern?
     pub fn is_approximately_pattern(&self) -> bool {
-        match &self.kind {
+        matches!(
+            &self.kind,
             ExprKind::Array(_)
-            | ExprKind::Call(..)
-            | ExprKind::Tup(_)
-            | ExprKind::Lit(_)
-            | ExprKind::Path(_)
-            | ExprKind::Struct(..) => true,
-            _ => false,
-        }
+                | ExprKind::Call(..)
+                | ExprKind::Tup(_)
+                | ExprKind::Lit(_)
+                | ExprKind::Path(_)
+                | ExprKind::Struct(..)
+        )
     }
 
     /// Whether this and the `other` expression are the same for purposes of an indexing operation.
@@ -4815,21 +4817,13 @@ impl ItemKind<'_> {
     }
 
     pub fn recovered(&self) -> bool {
+        let is_recovered = |data: &VariantData<'_>| {
+            matches!(data, VariantData::Struct { recovered: ast::Recovered::Yes(_), .. })
+        };
+
         match self {
-            ItemKind::Struct(
-                _,
-                _,
-                VariantData::Struct { recovered: ast::Recovered::Yes(_), .. },
-            ) => true,
-            ItemKind::Union(
-                _,
-                _,
-                VariantData::Struct { recovered: ast::Recovered::Yes(_), .. },
-            ) => true,
-            ItemKind::Enum(_, _, def) => def.variants.iter().any(|v| match v.data {
-                VariantData::Struct { recovered: ast::Recovered::Yes(_), .. } => true,
-                _ => false,
-            }),
+            ItemKind::Struct(_, _, data) | ItemKind::Union(_, _, data) => is_recovered(data),
+            ItemKind::Enum(_, _, def) => def.variants.iter().any(|v| is_recovered(&v.data)),
             _ => false,
         }
     }

@@ -668,7 +668,7 @@ pub fn walk_item<'v, V: Visitor<'v>>(visitor: &mut V, item: &'v Item<'v>) -> V::
 pub fn walk_body<'v, V: Visitor<'v>>(visitor: &mut V, body: &Body<'v>) -> V::Result {
     let Body { params, value } = body;
     walk_list!(visitor, visit_param, *params);
-    visitor.visit_expr(*value)
+    visitor.visit_expr(value)
 }
 
 pub fn walk_ident<'v, V: Visitor<'v>>(visitor: &mut V, ident: Ident) -> V::Result {
@@ -711,7 +711,7 @@ pub fn walk_local<'v, V: Visitor<'v>>(visitor: &mut V, local: &'v LetStmt<'v>) -
     let LetStmt { super_: _, pat, ty, init, els, hir_id, span: _, source: _ } = local;
     visit_opt!(visitor, visit_expr, *init);
     try_visit!(visitor.visit_id(*hir_id));
-    try_visit!(visitor.visit_pat(*pat));
+    try_visit!(visitor.visit_pat(pat));
     visit_opt!(visitor, visit_block, *els);
     visit_opt!(visitor, visit_ty_unambig, *ty);
     V::Result::output()
@@ -731,18 +731,16 @@ pub fn walk_stmt<'v, V: Visitor<'v>>(visitor: &mut V, statement: &'v Stmt<'v>) -
     match *kind {
         StmtKind::Let(local) => visitor.visit_local(local),
         StmtKind::Item(item) => visitor.visit_nested_item(item),
-        StmtKind::Expr(expression) | StmtKind::Semi(expression) => {
-            visitor.visit_expr(expression)
-        }
+        StmtKind::Expr(expression) | StmtKind::Semi(expression) => visitor.visit_expr(expression),
     }
 }
 
 pub fn walk_arm<'v, V: Visitor<'v>>(visitor: &mut V, arm: &'v Arm<'v>) -> V::Result {
     let Arm { hir_id, span: _, pat, guard, body } = arm;
     try_visit!(visitor.visit_id(*hir_id));
-    try_visit!(visitor.visit_pat(*pat));
+    try_visit!(visitor.visit_pat(pat));
     visit_opt!(visitor, visit_expr, *guard);
-    visitor.visit_expr(*body)
+    visitor.visit_expr(body)
 }
 
 pub fn walk_ty_pat<'v, V: Visitor<'v>>(visitor: &mut V, pattern: &'v TyPat<'v>) -> V::Result {
@@ -805,7 +803,7 @@ pub fn walk_pat_field<'v, V: Visitor<'v>>(visitor: &mut V, field: &'v PatField<'
     let PatField { hir_id, ident, pat, is_shorthand: _, span: _ } = field;
     try_visit!(visitor.visit_id(*hir_id));
     try_visit!(visitor.visit_ident(*ident));
-    visitor.visit_pat(*pat)
+    visitor.visit_pat(pat)
 }
 
 pub fn walk_pat_expr<'v, V: Visitor<'v>>(visitor: &mut V, expr: &'v PatExpr<'v>) -> V::Result {
@@ -978,7 +976,7 @@ pub fn walk_expr_field<'v, V: Visitor<'v>>(visitor: &mut V, field: &'v ExprField
     let ExprField { hir_id, ident, expr, span: _, is_shorthand: _ } = field;
     try_visit!(visitor.visit_id(*hir_id));
     try_visit!(visitor.visit_ident(*ident));
-    visitor.visit_expr(*expr)
+    visitor.visit_expr(expr)
 }
 
 pub fn walk_const_arg_expr_field<'v, V: Visitor<'v>>(
@@ -988,7 +986,7 @@ pub fn walk_const_arg_expr_field<'v, V: Visitor<'v>>(
     let ConstArgExprField { hir_id, field, expr, span: _ } = field;
     try_visit!(visitor.visit_id(*hir_id));
     try_visit!(visitor.visit_ident(*field));
-    visitor.visit_const_arg_unambig(*expr)
+    visitor.visit_const_arg_unambig(expr)
 }
 
 /// We track whether an infer var is from a [`Ty`], [`ConstArg`], or [`GenericArg`] so that
@@ -1143,7 +1141,7 @@ pub fn walk_const_arg<'v, V: Visitor<'v>>(
             V::Result::output()
         }
         ConstArgKind::Path(qpath) => visitor.visit_qpath(qpath, *hir_id, qpath.span()),
-        ConstArgKind::Anon(anon) => visitor.visit_anon_const(*anon),
+        ConstArgKind::Anon(anon) => visitor.visit_anon_const(anon),
         ConstArgKind::Error(_) => V::Result::output(), // errors and spans are not important
         ConstArgKind::Literal { .. } => V::Result::output(), // FIXME(mcga)
     }
@@ -1340,8 +1338,7 @@ pub fn walk_impl_item<'v, V: Visitor<'v>>(
     visitor: &mut V,
     impl_item: &'v ImplItem<'v>,
 ) -> V::Result {
-    let ImplItem { owner_id: _, ident, generics, ref impl_kind, ref kind, span: _ } =
-        *impl_item;
+    let ImplItem { owner_id: _, ident, generics, ref impl_kind, ref kind, span: _ } = *impl_item;
 
     try_visit!(visitor.visit_ident(ident));
     try_visit!(visitor.visit_generics(generics));
@@ -1382,7 +1379,7 @@ pub fn walk_trait_ref<'v, V: Visitor<'v>>(
 ) -> V::Result {
     let TraitRef { hir_ref_id, path } = trait_ref;
     try_visit!(visitor.visit_id(*hir_ref_id));
-    visitor.visit_path(*path, *hir_ref_id)
+    visitor.visit_path(path, *hir_ref_id)
 }
 
 pub fn walk_param_bound<'v, V: Visitor<'v>>(
@@ -1458,7 +1455,7 @@ pub fn walk_field_def<'v, V: Visitor<'v>>(
     try_visit!(visitor.visit_id(*hir_id));
     try_visit!(visitor.visit_ident(*ident));
     visit_opt!(visitor, visit_anon_const, default);
-    visitor.visit_ty_unambig(*ty)
+    visitor.visit_ty_unambig(ty)
 }
 
 pub fn walk_enum_def<'v, V: Visitor<'v>>(
@@ -1547,7 +1544,7 @@ pub fn walk_assoc_item_constraint<'v, V: Visitor<'v>>(
     let AssocItemConstraint { hir_id, ident, gen_args, kind: _, span: _ } = constraint;
     try_visit!(visitor.visit_id(*hir_id));
     try_visit!(visitor.visit_ident(*ident));
-    try_visit!(visitor.visit_generic_args(*gen_args));
+    try_visit!(visitor.visit_generic_args(gen_args));
     match constraint.kind {
         AssocItemConstraintKind::Equality { ref term } => match term {
             Term::Ty(ty) => try_visit!(visitor.visit_ty_unambig(ty)),
